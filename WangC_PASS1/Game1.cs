@@ -115,6 +115,10 @@ namespace WangC_PASS1
         // spacer between game over title and result box
         const int GAME_OVER_RSLT_SPC_Y = 10;
 
+        const int RSLT_SCOR_X = 470;
+        const int RSLT_CUR_SCOR_Y = 460;
+        const int RSLT_HIGH_SCOR_Y = 520; // guess
+
         // create a instance of the random function
         Random rand = new Random();
 
@@ -185,7 +189,7 @@ namespace WangC_PASS1
         Vector2 readyTitlePos;
 
         // initialize score variables
-        int curScore = SCOR_RST;
+        int curScor = SCOR_RST;
         Vector2 curScorPos = new Vector2(SCREEN_WIDTH / 2, CUR_SCR_Y);
         Texture2D numsLrgImg;
         Texture2D numsSmlImg;
@@ -207,8 +211,8 @@ namespace WangC_PASS1
         Vector2 rsltBoxPos;
         Vector2 rsltBoxPosRst;
         Vector2 rsltBoxPosFin;
-        Vector2 rsltCurScorPos;
-        Vector2 rsltHighScorPos;
+        Vector2 rsltCurScorPos = new Vector2(RSLT_SCOR_X, RSLT_CUR_SCOR_Y);
+        Vector2 rsltHighScorPos = new Vector2(RSLT_SCOR_X, RSLT_HIGH_SCOR_Y);
 
 
         public Game1()
@@ -327,10 +331,9 @@ namespace WangC_PASS1
             gameOvrPos = gameOvrPosFin;
 
             // load result box images
-            rsltsBoxImg = Content.Load<Texture2D>("Images/Sprites/ReusultsBox");
-            rsltBoxPosFin = new Vector2(SCREEN_WIDTH / 2 - rsltsBoxImg.Width / 2, gameOvrPos.Y - gameOvrImg.Height - GAME_OVER_RSLT_SPC_Y);
+            rsltsBoxImg = Content.Load<Texture2D>("Images/Sprites/ResultsBox");
+            rsltBoxPosFin = new Vector2(SCREEN_WIDTH / 2 - rsltsBoxImg.Width / 2, gameOvrPos.Y + gameOvrImg.Height + GAME_OVER_RSLT_SPC_Y);
             rsltBoxPos = rsltBoxPosFin;
-
 
         }
 
@@ -585,7 +588,7 @@ namespace WangC_PASS1
             // otherwise reset the fade variables
             else ResetFade(FADE_DEATH_TIME, false, EMPTY_OPACITY); // set it to death fade time since the player is going to die before game over screen
 
-            DrawNumberSequence(curScore.ToString(), numsLrgImg, curScorPos, NUM_SPC_L);
+            DrawNumberSequence(curScor.ToString(), numsLrgImg, curScorPos, NUM_SPC_L);
         }
 
         //update the current game play
@@ -610,7 +613,7 @@ namespace WangC_PASS1
 
             birdAnim.Draw(spriteBatch, Color.White);
 
-            DrawScore();
+            DrawScore(curScor, numsLrgImg, curScorPos, NUM_SPC_L);
         }
 
         private void UpdatePreGameOvr(GameTime gameTime)
@@ -663,6 +666,12 @@ namespace WangC_PASS1
             birdAnim.Draw(spriteBatch, Color.White);
 
             spriteBatch.Draw(gameOvrImg, gameOvrPos, Color.White);
+
+            spriteBatch.Draw(rsltsBoxImg, rsltBoxPos, Color.White);
+
+            DrawScore(curScor, numsLrgImg, rsltCurScorPos, NUM_SPC_L);
+            DrawScore(curScor, numsLrgImg, rsltHighScorPos, NUM_SPC_L);
+
         }
 
         private void UpdateBirdPos(GameTime gameTime)
@@ -685,7 +694,7 @@ namespace WangC_PASS1
 
             birdAnim.TranslateTo(birdPos.X, birdPos.Y);
 
-            //BirdCollision(gameTime);
+            BirdCollision(gameTime);
         }
 
         private void BirdCollision(GameTime gameTime)
@@ -849,30 +858,30 @@ namespace WangC_PASS1
             }
         }
 
-        private void GeneratePipe(int i)
+        private void GeneratePipe(int pipeIndex)
         {
             // reset pip passed
-            pipesPass[i] = false;
+            pipesPass[pipeIndex] = false;
 
             // the right most pipe would be one index smaller
-            int rightMost = i - 1;
-            if (i == 0) rightMost = PIPE_COUNT - 1;
-            //else rightMost = i - 1;
+            int rightMost = pipeIndex - 1;
+            if (pipeIndex == 0) rightMost = PIPE_COUNT - 1;
+            //else rightMost = pipeIndex - 1;
 
             // reposition image back to the other end of the other image
-            pipePos[i, TOP].X = pipePos[rightMost, TOP].X + pipeRecs[rightMost, TOP].Width + PIPE_X_SPC;
-            pipePos[i, BOT].X = pipePos[rightMost, BOT].X + pipeRecs[rightMost, BOT].Width + PIPE_X_SPC;
+            pipePos[pipeIndex, TOP].X = pipePos[rightMost, TOP].X + pipeRecs[rightMost, TOP].Width + PIPE_X_SPC;
+            pipePos[pipeIndex, BOT].X = pipePos[rightMost, BOT].X + pipeRecs[rightMost, BOT].Width + PIPE_X_SPC;
 
             // vertical displacement
             int verDis = rand.Next(-400, 400);
 
-            pipePos[i, TOP].Y = MathHelper.Clamp(pipePos[rightMost, TOP].Y + verDis, -1 * pipeRecs[rightMost, TOP].Height + PIPE_MIN_Y_FACTR, PIPE_MAX_Y);
-            pipePos[i, BOT].Y = pipePos[i, TOP].Y + pipeRecs[i, TOP].Height + PIPE_Y_SPC;
+            pipePos[pipeIndex, TOP].Y = MathHelper.Clamp(pipePos[rightMost, TOP].Y + verDis, -1 * pipeRecs[rightMost, TOP].Height + PIPE_MIN_Y_FACTR, PIPE_MAX_Y);
+            pipePos[pipeIndex, BOT].Y = pipePos[pipeIndex, TOP].Y + pipeRecs[pipeIndex, TOP].Height + PIPE_Y_SPC;
 
-            pipeRecs[i, TOP].X = (int)pipePos[i, TOP].X;
-            pipeRecs[i, TOP].Y = (int)pipePos[i, TOP].Y;
-            pipeRecs[i, BOT].X = (int)pipePos[i, BOT].X;
-            pipeRecs[i, BOT].Y = (int)pipePos[i, BOT].Y;
+            pipeRecs[pipeIndex, TOP].X = (int)pipePos[pipeIndex, TOP].X;
+            pipeRecs[pipeIndex, TOP].Y = (int)pipePos[pipeIndex, TOP].Y;
+            pipeRecs[pipeIndex, BOT].X = (int)pipePos[pipeIndex, BOT].X;
+            pipeRecs[pipeIndex, BOT].Y = (int)pipePos[pipeIndex, BOT].Y;
         }
 
         private void ResetPipes()
@@ -929,40 +938,37 @@ namespace WangC_PASS1
 
         private void ResetScore()
         {
-            curScorPos.X = SCREEN_WIDTH / 2;
+            curScorPos.X = SCREEN_WIDTH / 2; // able to use 20 since (x/10/2) is (x/20)
 
-            curScore = SCOR_RST;
+            curScor = SCOR_RST;
         }
 
         private void UpdateScore(GameTime gametime, int increment = 1) 
         {
-            curScore += increment;
-
-            if (Math.Floor(Math.Log10(curScore)) > Math.Floor(Math.Log10(curScore - increment)) && curScore > 9)
-            {    
-                curScorPos.X -= numsLrgImg.Width / 10 - NUM_SPC_L;
-            }
-
+            curScor += increment;
         }
 
         // draw the current score
-        private void DrawScore()
+        private void DrawScore(int score, Texture2D texture, Vector2 scorePos, int spacing)
         {
-            DrawNumberSequence(curScore.ToString(), numsLrgImg, curScorPos, NUM_SPC_L);
+            DrawNumberSequence(score.ToString(), texture, scorePos, spacing, 0.5f);
         }
 
 
 
         // draw numbers with the num texture when given a number in the form a string
-        public void DrawNumberSequence(string num, Texture2D texture, Vector2 loc, int numSpacer)
+        public void DrawNumberSequence(string num, Texture2D texture, Vector2 loc, int numSpacer, float offset)
         {
             int digitSize = texture.Width / 10; // 10 digits
+
+            loc.X -= num.Length * (texture.Width / 10 + NUM_SPC_L) - NUM_SPC_L;
+            loc.X += digitSize * offset;
 
             for (int i = 0; i < num.Length; i++)
             {
                 int digit = num[i] - '0';
 
-                Vector2 drawLoc = new Vector2(loc.X + i * digitSize + i * numSpacer, loc.Y);
+                Vector2 drawLoc = new Vector2(loc.X + i * (digitSize + numSpacer), loc.Y);
                 Rectangle sourceRec = new Rectangle(digit * digitSize, 0, digitSize, texture.Height);
 
                 spriteBatch.Draw(texture, drawLoc, sourceRec, Color.White);
