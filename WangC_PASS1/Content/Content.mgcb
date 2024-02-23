@@ -260,3 +260,45 @@
 /processorParam:TextureFormat=Color
 /build:Images/Sprites/TopPipe.png
 
+#begin Music/Country.ogg
+/importer:OggImporter
+/processor:SongProcessor
+/processorParam:Quality=Best
+/build:Music/Country.ogg
+
+#begin Music/Nature.ogg
+/importer:OggImporter
+/processor:SongProcessor
+/processorParam:Quality=Best
+/build:Music/Nature.ogg
+
+#begin Sound/Die.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sound/Die.wav
+
+#begin Sound/Flap.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sound/Flap.wav
+
+#begin Sound/Hit.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sound/Hit.wav
+
+#begin Sound/MenuSwoosh.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sound/MenuSwoosh.wav
+
+#begin Sound/Point.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sound/Point.wav
+
