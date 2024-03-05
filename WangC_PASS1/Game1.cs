@@ -1,4 +1,11 @@
-﻿using GameUtility;
+﻿//Author: Colin Wang
+//File Name: Game1.cs
+//Project Name: PASS1 a Flappy Bird Clone
+//Created Date: Feb 14, 2024
+//Modified Date: Feb 23, 2024
+//Description: Clone of Flappy Bird a mobile game with file i/o stats saving and implementations of simple data structures
+
+using GameUtility;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
@@ -83,10 +90,13 @@ namespace WangC_PASS1
         const int AVG_FLAPS_Y = 495;
         const int STATS_SCOR_X = 350;
 
+        // y position of the stats box
+        const int STAT_BOX_Y = 240;
+
         // num of scores counted in stats
         const int TOP_SCORS = 5;
 
-        // x position of top 5 scors
+        // x position of top 5 scores
         const int TOP_SCORS_X = 480;
         const int TOP_SCORS_Y = 325;
         const int TOP_SCORS_Y_SPC = 50;
@@ -95,9 +105,15 @@ namespace WangC_PASS1
         const int PIPE_X_SPC = 200;
         const int PIPE_Y_SPC = 210;
 
-        // UNDONE
+        // pipe variables for max and min values
         const int PIPE_MAX_Y = 0;
         const int PIPE_MIN_Y_FACTR = 88;
+
+        // max and min values for generating random y offset of a pipe
+        const int PIPE_GEN_MAX = 400;
+        const int PIPE_GEN_MIN = -400;
+
+        // number of pipes used, and the x reset position of the pipe
         const int PIPE_COUNT = 3;
         const int PIPE_RST_X = 600;
 
@@ -174,7 +190,7 @@ namespace WangC_PASS1
         const int GOLD_SCR = 30;
         const int PLAT_SCR = 40;
 
-        // location of the medals realtive to the top of the restults box
+        // location of the medals relative to the top of the results box
         const int COIN_OFFSET_Y = 86;
         const int COIN_OFFSET_X = 53;
 
@@ -211,9 +227,6 @@ namespace WangC_PASS1
         StreamReader inFile;
         StreamWriter outFile;
 
-        // initialize default font
-        SpriteFont debugFont;
-
         // initialize background variables
         Texture2D bgImg;
         Vector2 bgPos;
@@ -248,7 +261,7 @@ namespace WangC_PASS1
         // initialize fader variables
         Texture2D fadeImg;
         Rectangle scrnRec = new Rectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT); // rectangle of fade is size of screen
-        Timer fadeCurTime = new Timer(FADE_STATE_TIME, false); // set to fade statetime for now
+        Timer fadeCurTime = new Timer(FADE_STATE_TIME, false); // set to fade state time for now
         float fadeOpacity = FULL_OPACITY; // fade opacity, set the opacity to 100
 
         // tells weather flashed reached half way
@@ -326,7 +339,7 @@ namespace WangC_PASS1
         Texture2D newBestImg;
         Vector2 newBestPos = new Vector2(NEW_BEST_X, NEW_BEST_Y);
 
-        // initialize all audio varibles
+        // initialize all audio variables
         Song bgMusic;
         SoundEffect fadeSnd;
         SoundEffect flapSnd;
@@ -356,8 +369,6 @@ namespace WangC_PASS1
         /// </summary>
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
-
             // set screen dimensions to the defined width and height
             graphics.PreferredBackBufferWidth = SCREEN_WIDTH;
             graphics.PreferredBackBufferHeight = SCREEN_HEIGHT;
@@ -382,11 +393,6 @@ namespace WangC_PASS1
         {
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
-
-            // TODO: use this.Content to load your game content here
-
-            // load debug font
-            debugFont = Content.Load<SpriteFont>("Fonts/DebugFont");
 
             // load background image and initialize position
             bgImg = Content.Load<Texture2D>("Images/Backgrounds/Background");
@@ -422,6 +428,7 @@ namespace WangC_PASS1
             btnRecs[MENU_BTN] = new Rectangle((SCREEN_WIDTH / 2) - btnImgs[MENU_BTN].Width / 2, BTN_Y, btnImgs[MENU_BTN].Width, btnImgs[MENU_BTN].Height);
 
             // store ground image, position, and rectangle variables data
+            // note, able to initialize each index independently as it is known only 2 ground images are needed
             grdImg = Content.Load<Texture2D>("Images/Backgrounds/Ground");
             grdPoss[0] = new Vector2(0, GRD_Y);
             grdRecs[0] = new Rectangle((int)grdPoss[0].X, (int)grdPoss[0].Y, grdImg.Width, grdImg.Height);
@@ -431,8 +438,9 @@ namespace WangC_PASS1
             // load fader image
             fadeImg = Content.Load<Texture2D>("Images/Sprites/Fader");
 
+            // load the stats box image and store the position of it
             statsBoxImg = Content.Load<Texture2D>("Images/Sprites/StatsPage");
-            statsBoxPos = new Vector2(SCREEN_WIDTH / 2 - statsBoxImg.Width / 2, 240);
+            statsBoxPos = new Vector2(SCREEN_WIDTH / 2 - statsBoxImg.Width / 2, STAT_BOX_Y);
 
             // load click instruction image and store it's position
             intrucImg = Content.Load<Texture2D>("Images/Sprites/ClickInstruction");
@@ -574,58 +582,6 @@ namespace WangC_PASS1
             base.Update(gameTime);
         }
 
-        /// <summary>
-        /// This is called when the game should draw itself.
-        /// </summary>
-        /// <param name="gameTime">Provides a snapshot of timing values.</param>
-        protected override void Draw(GameTime gameTime)
-        {
-            // TODO: Add your drawing code here
-            spriteBatch.Begin();
-
-            // draw the background 
-            spriteBatch.Draw(bgImg, bgPos, Color.White);
-
-            // draw the current game state
-            switch (gameState)
-            {
-                case STATS_STATE:
-                    //draw stats screen
-                    DrawStats();
-                    break;
-
-                case MENU_STATE:
-                    // draw title screen
-                    DrawMenuScreen();
-                    break;
-
-                case PRE_GAME_PLAY_STATE:
-                    // draw pre game play state
-                    DrawPreGamePlay(gameTime);
-                    break;
-
-                case GAME_PLAY_STATE:
-                    // draw game play state
-                    DrawGamePlay(gameTime);
-                    break;
-
-                case PRE_GAME_OVER_STATE:
-                    // draw the pre game over screen
-                    DrawPreGameOvr();
-                    break;
-
-                case GAME_OVER_STATE:
-                    // draw the game over screen
-                    DrawGameOvr(gameTime);
-                    break;
-            }
-
-
-            spriteBatch.End();
-            base.Draw(gameTime);
-        }
-
-
         // method to update stats state
         private void UpdateStats(GameTime gameTime)
         {
@@ -654,16 +610,6 @@ namespace WangC_PASS1
             {
                 UpdateFade(gameTime, FADE_STATE_TIME, nxtGameState);
             }
-        }
-
-        // method to reset any menu elements
-        private void RstMenu()
-        {
-            // reset the bird position to title position
-            birdPos = birdTitlePosRst;
-
-            // re activate the bird animation, and restart it aswell
-            birdAnim.Activate(true);
         }
 
         // method to update the menu state
@@ -718,21 +664,6 @@ namespace WangC_PASS1
             }
         }
 
-        // method to reset the any pre game elements
-        private void RstPreGamePlay()
-        {
-            // set bird to pre game position
-            birdPos.X = birdPrePosRst.X;
-            birdPos.Y = birdPrePosRst.Y;
-            birdAnim.TranslateTo(birdPos.X, birdPos.Y);
-
-            // reset bird speed and angle
-            birdSpd = FLAP;
-            birdAnim.SetAngleDeg(0);
-
-            // reset current score variables
-            ResetScore();
-        }
 
         // method update the pre game play screen
         private void UpdatePreGame(GameTime gameTime)
@@ -776,10 +707,10 @@ namespace WangC_PASS1
             birdAnim.Update(gameTime);
 
             // update the pipes
-            UpdatePipes(gameTime);
+            UpdatePipes();
 
             // update the bird position
-            UpdateBirdPos(gameTime);
+            UpdateBirdPos();
 
             // update the scrolling ground
             UpdateGround();
@@ -804,7 +735,7 @@ namespace WangC_PASS1
                 case PIPE_DEATH:
                     // still need to wait for bird to hit ground
                     // thus update the bird position
-                    UpdateBirdPos(gameTime);
+                    UpdateBirdPos();
                     break;
             }
 
@@ -834,30 +765,6 @@ namespace WangC_PASS1
                 // reset game over state
                 ResetGameOvr();
             }
-        }
-
-        // method to reset any game over elements
-        private void ResetGameOvr()
-        {
-            // reset the count delay timer. However only activate it if the current score is non-zero
-            if (curScor != 0)
-            {
-                cntDelay.ResetTimer(true);
-            }
-            else
-            {
-                cntDelay.ResetTimer(false);
-            }
-
-            // reset the game over fade title timer
-            gameOvrFade.ResetTimer(true);
-
-            // reset the result box position
-            rsltBoxPos = rsltBoxPosRst;
-
-            // reset the menu button timer and position
-            menuUpTime.ResetTimer(false);
-            btnRecs[MENU_BTN].Y = MENU_BTN_Y_RST;
         }
 
         // method to update game over state
@@ -932,136 +839,8 @@ namespace WangC_PASS1
             }
         }
 
-        // method draw the stats screen
-        private void DrawStats()
-        {
-            // draw the ground
-            DrawGround();
-
-            // draw the menu button
-            spriteBatch.Draw(btnImgs[MENU_BTN], btnRecs[MENU_BTN], Color.White);
-
-            // draw the stats box
-            DrawStatsBox();
-
-            // draw fade
-            DrawFadeScr(Color.Black);
-        }
-
-        // method to draw the title screen
-        private void DrawMenuScreen()
-        {
-            // draw the ground
-            DrawGround();
-
-            // draw the title
-            spriteBatch.Draw(titleImg, titlePos, Color.White);
-
-            // draw animated bird
-            birdAnim.Draw(spriteBatch, Color.White);
-
-            // draw the starting and stats button in the title screen
-            spriteBatch.Draw(btnImgs[START_BTN], btnRecs[START_BTN], Color.White);
-            spriteBatch.Draw(btnImgs[STATS_BTN], btnRecs[STATS_BTN], Color.White);
-
-            // only draw the fade is the timer is active
-            if (fadeCurTime.IsActive())
-            {
-                DrawFadeScr(Color.Black);
-            }
-        }
-
-        // method to draw the pre game play screen
-        private void DrawPreGamePlay(GameTime gameTime)
-        {
-            // draw the bird
-            birdAnim.Draw(spriteBatch, Color.White);
-
-            // draw the ground
-            DrawGround();
-
-            // draw click instructions
-            spriteBatch.Draw(intrucImg, intrcuPos, Color.White);
-
-            // draw get ready title
-            spriteBatch.Draw(readyTitleImg, readyTitlePos, Color.White);
-
-            // check if the timer is still running, if so draw the fade
-            if (fadeCurTime.IsActive())
-            {
-                DrawFadeScr(Color.Black);
-            }
-            // otherwise reset the fade variables
-
-            // draw the current score, such that the unit digits is centered
-            DrawNumberSequence(curScor.ToString(), numsLrgImg, curScorPos, NUM_SPC_FACTOR, 0.5f);
-        }
-
-        // method to draw the game play
-        private void DrawGamePlay(GameTime gameTime)
-        {
-            // draw the pipes 
-            DrawPipes();
-
-            // draw the pipes
-            DrawGround();
-
-            // draw the bird with rotation
-            birdAnim.DrawRotated(spriteBatch, Color.White);
-
-            // draw the current score
-            DrawNumberSequence(curScor.ToString(), numsLrgImg, curScorPos, NUM_SPC_FACTOR, 0.5f);
-        }
-
-        // method to draw the pre game over screen
-        private void DrawPreGameOvr()
-        {
-            // draw the pipes
-            DrawPipes();
-
-            // draw the ground
-            DrawGround();
-
-            // draw the bird rotated
-            birdAnim.DrawRotated(spriteBatch, Color.White);
-
-            // draw the death fade (flash)
-            DrawFadeScr(Color.White);
-        }
-
-        // method to draw the game over screen
-        private void DrawGameOvr(GameTime gameTime)
-        {
-            // draw the pipes
-            DrawPipes();
-
-            // draw the ground
-            DrawGround();
-
-            // draw bird rotated
-            birdAnim.DrawRotated(spriteBatch, Color.White);
-
-            // draw the game over title
-            DrawGameOvrTitle();
-
-            // draw the result box and it's elements
-            DrawRsltBox();
-
-            // result box is in place draw the menu
-            if (rsltBoxPos == rsltBoxPosFin)
-            {
-                spriteBatch.Draw(btnImgs[MENU_BTN], btnRecs[MENU_BTN], Color.White);
-            }
-
-            // check if the timer is still running, if so draw the fade
-            if (fadeCurTime.IsActive())
-            {
-                DrawFadeScr(Color.Black);
-            }
-        }
-
         // method to update the position of the bird
-        private void UpdateBirdPos(GameTime gameTime)
+        private void UpdateBirdPos()
         {
             // check weather if the bird has not died
             if (!isBirdDead)
@@ -1094,7 +873,7 @@ namespace WangC_PASS1
             UpdateBirdDeg(MIN_ANGL, MAX_ANGL, birdSpd);
 
             // update any bird collision
-            BirdCollision(gameTime);
+            BirdCollision();
         }
 
         // method to update the bird's tilt angle
@@ -1103,7 +882,8 @@ namespace WangC_PASS1
             birdAnim.SetAngleDeg(MathHelper.Lerp(minAngle, maxAngle, (spd - MIN_SPD) / (MAX_SPD - MIN_SPD)));
         }
 
-        private void BirdCollision(GameTime gameTime)
+        // method that updates bird collision
+        private void BirdCollision()
         {
             // check if bird has died, if it has not need to check if it hits the ceiling
             if (!isBirdDead && birdAnim.GetDestRec().Top <= 0)
@@ -1111,9 +891,11 @@ namespace WangC_PASS1
                 // store the death type
                 birdDeathType = PIPE_DEATH;
 
-                DeathDelayReset(gameTime, birdDeathType);
+                // reset the death delay variables
+                DeathDelayReset(birdDeathType);
 
-                PlaySound(hitSnd);
+                // play hit sound and activate hit timer
+                PlaySound(hitSnd, HIT_SND_VOL);
                 hitSndTimer.Activate();
             }
             // iterate through the pipes check if bird has died, if it has not need to check if it hits the ceiling
@@ -1124,10 +906,12 @@ namespace WangC_PASS1
                     // store the death type
                     birdDeathType = PIPE_DEATH;
 
-                    PlaySound(hitSnd);
-                    hitSndTimer.Activate();
+                    // method that reset all death delay variables
+                    DeathDelayReset(birdDeathType);
 
-                    DeathDelayReset(gameTime, birdDeathType);
+                    // play hit sound and activate hit timer
+                    PlaySound(hitSnd, HIT_SND_VOL);
+                    hitSndTimer.Activate();
                     break;
                 }
             }
@@ -1147,45 +931,55 @@ namespace WangC_PASS1
                 // it could be possible if bird died from pipe before it hit ground
                 if (!isBirdDead)
                 {
-                    DeathDelayReset(gameTime, birdDeathType);
+                    // method that reset all death delay variables
+                    DeathDelayReset(birdDeathType);
 
-                    PlaySound(hitSnd);
+                    // play hit sound and activate hit timer
+                    PlaySound(hitSnd, HIT_SND_VOL);
                     hitSndTimer.Activate();
                 }
+                // else activate bird death timer
                 else
                 {
                     birdDeathTimer.Activate();
                 }
 
+
+                // check if the hit sound timer is finished
                 if (hitSndTimer.IsFinished())
                 {
+                    // play death sound if so, and reset hit sound timer
                     PlaySound(dieSnd);
                     hitSndTimer.ResetTimer(false);
                 }
             }
         }
 
-        private void DeathDelayReset(GameTime gameTime, int deathType)
+        private void DeathDelayReset(int deathType)
         {
             // deactivate the bird's animation and set idle frame to 1
             birdAnim.Deactivate();
             birdAnim.SetIdleFrame(1); // NOTE NEED TO FIRST DEACTIVE then set idle frame. 
 
-
+            // reset bird timer
             birdDeathTimer.ResetTimer(false);
 
+            // reset the fade timer
             ResetFade(FADE_DEATH_TIME, true);
 
+            // set game state to pre game, and isBirdDeath to true
             gameState = PRE_GAME_OVER_STATE;
-
             isBirdDead = true;
 
+            // check if ground death
             if (deathType == GRD_DEATH)
             {
+                // if ground death, bird death timer starts
                 birdDeathTimer.Activate();
             }
         }
 
+        // method that updates the fade death class
         private void UpdateFadeDeath(GameTime gameTime)
         {
             UpdateFade(gameTime, FADE_DEATH_TIME);
@@ -1195,10 +989,10 @@ namespace WangC_PASS1
         // if isIn is true, then it's fading in, otherwise it's fading out
         private void UpdateFade(GameTime gameTime, int fadeTime, int nextGameState = -1)
         {
+            // update the fade timer
             fadeCurTime.Update(gameTime.ElapsedGameTime.TotalMilliseconds);
 
-            //Console.WriteLine(fadeCurTime.GetTimePassed().ToString() + " " + gameState + " " + fadeOpacity);
-
+            // fade out 
             if (fadeCurTime.GetTimePassed() < fadeTime / 2)
             {
                 // fade out
@@ -1210,42 +1004,27 @@ namespace WangC_PASS1
                 // fade in
                 if (nextGameState != -1 && !fadedHalf)
                 {
+                    // set game state to the next sate in queue
                     gameState = nextGameState;
+
+                    // reset set the next game state
                     switch (gameState)
                     {
                         case PRE_GAME_PLAY_STATE:
+                            // reset pre game place
                             RstPreGamePlay();
                             break;
-                        case GAME_OVER_STATE:
-                            break;
                         case MENU_STATE:
+                            // reset the menu state
                             RstMenu();
                             break;
                     }
                 }
 
+                // store the fade opacity as the timer is a factor which opacity changes
                 fadeOpacity = Math.Min(1f, (fadeTime - (float)fadeCurTime.GetTimePassed()) / (fadeTime / 2)) * FULL_OPACITY;
                 fadedHalf = true;
             }
-        }
-
-        // draw the fade screen
-        // if isIn is true, then it's fading in, otherwise it's fading out
-        private void DrawFadeScr(Color color)
-        {
-            spriteBatch.Draw(fadeImg, scrnRec, color * fadeOpacity);
-        }
-
-        // reset all fade variables
-        private void ResetFade(int fadeTime, bool isActive)
-        {
-            // reset the fade opacity and fade timer
-            fadeOpacity = EMPTY_OPACITY;
-            fadeCurTime.SetTargetTime(fadeTime);
-            fadeCurTime.ResetTimer(isActive);
-
-            // reset the fade half flag
-            fadedHalf = false;
         }
 
         // update the scrolling of the ground images
@@ -1268,16 +1047,8 @@ namespace WangC_PASS1
             }
         }
 
-        // method to draw the ground
-        private void DrawGround()
-        {
-            // draw the ground
-            spriteBatch.Draw(grdImg, grdRecs[0], Color.White);
-            spriteBatch.Draw(grdImg, grdRecs[1], Color.White);
-        }
-
         // method to update pipes
-        private void UpdatePipes(GameTime gameTime)
+        private void UpdatePipes()
         {
             for (int i = 0; i < PIPE_COUNT; i++)
             {
@@ -1295,7 +1066,7 @@ namespace WangC_PASS1
                 else if (!pipesPass[i] && pipeRecs[i, TOP].Right <= birdAnim.GetDestRec().Right)
                 {
                     // increment the score and set pipe to passed
-                    UpdateScore(10);
+                    UpdateScore();
                     pipesPass[i] = true;
 
                     // play point sound
@@ -1308,7 +1079,7 @@ namespace WangC_PASS1
             }
         }
 
-        // method to generate pipe posistions when given pipe index
+        // method to generate pipe positions when given pipe index
         private void GeneratePipe(int pipeIndex)
         {
             // reset pip passed
@@ -1326,7 +1097,7 @@ namespace WangC_PASS1
             pipePos[pipeIndex, BOT].X = pipePos[rightMost, BOT].X + pipeRecs[rightMost, BOT].Width + PIPE_X_SPC;
 
             // vertical displacement
-            int verDis = rand.Next(-400, 400);
+            int verDis = rand.Next(PIPE_GEN_MIN, PIPE_GEN_MAX);
 
             // clamp the y value of top pipe between max and min values, and set bottom to be below the top by given amount
             pipePos[pipeIndex, TOP].Y = MathHelper.Clamp(pipePos[rightMost, TOP].Y + verDis, -1 * pipeRecs[rightMost, TOP].Height + PIPE_MIN_Y_FACTR, PIPE_MAX_Y);
@@ -1339,131 +1110,11 @@ namespace WangC_PASS1
             pipeRecs[pipeIndex, BOT].Y = (int)pipePos[pipeIndex, BOT].Y;
         }
 
-        // method to reset the pipes
-        private void ResetPipes()
-        {
-            // iterate through the pipes
-            for (int i = 0; i < PIPE_COUNT; i++)
-            {
-                // reset if pipe has passed bird
-                pipesPass[i] = false;
-
-                // locations of the ith pipe image
-                // check if i < 0, other wise i is 0
-                if (i > 0)
-                {
-                    // vertical displacement
-                    int verDis = rand.Next(-400, 400);
-
-                    // the top of the pipe will be +/- 400 of the previous pipe
-                    // but also needs to be between 0, and - pipe height + 88
-                    pipePos[i, TOP].Y = MathHelper.Clamp(pipePos[i - 1, TOP].Y + verDis, -1 * pipeRecs[i - 1, TOP].Height + PIPE_MIN_Y_FACTR, PIPE_MAX_Y);
-                    pipePos[i, BOT].Y = pipePos[i, TOP].Y + pipeRecs[i, TOP].Height + PIPE_Y_SPC; // 
-
-                    // set x values of the pipes to the right of the previous pipe
-                    pipePos[i, TOP].X = pipePos[i - 1, TOP].X + pipeRecs[i - 1, TOP].Width + PIPE_X_SPC;
-                    pipePos[i, BOT].X = pipePos[i - 1, BOT].X + pipeRecs[i - 1, BOT].Width + PIPE_X_SPC;
-                }
-                else // else i is at the 0 index 
-                {
-                    // the right most will be the always be between 0 and - the negative height of pipe plus '88'
-                    pipePos[i, TOP].Y = rand.Next(-1 * pipeRecs[0, TOP].Height + PIPE_MIN_Y_FACTR, PIPE_MAX_Y);
-                    pipePos[i, BOT].Y = pipePos[i, TOP].Y + pipeRecs[i, TOP].Height + PIPE_Y_SPC;
-
-                    // set the x value to the reset position
-                    pipePos[i, TOP].X = PIPE_RST_X;
-                    pipePos[i, BOT].X = PIPE_RST_X;
-                }
-
-                // change all the rectangle position to their respective position values
-                pipeRecs[i, TOP].X = (int)pipePos[i, TOP].X;
-                pipeRecs[i, BOT].X = (int)pipePos[i, BOT].X;
-                pipeRecs[i, TOP].Y = (int)pipePos[i, TOP].Y;
-                pipeRecs[i, BOT].Y = (int)pipePos[i, BOT].Y;
-            }
-        }
-
-        // method to draw the pipes
-        private void DrawPipes()
-        {
-            // iterate through the pipes
-            for (int i = 0; i < PIPE_COUNT; i++)
-            {
-                // draw the bottom and top image of the ith pipe
-                spriteBatch.Draw(pipeImgs[TOP], pipeRecs[i, TOP], Color.White);
-                spriteBatch.Draw(pipeImgs[BOT], pipeRecs[i, BOT], Color.White);
-            }
-        }
-
-        // method to draw stats rectangle box
-        private void DrawStatsBox()
-        {
-            // draw the stats image
-            spriteBatch.Draw(statsBoxImg, statsBoxPos, Color.White);
-
-            // draw the total play count and total flap count with small numbers
-            DrawNumberSequence(playsCnt.ToString(), numsSmlImg, playsPos, NUM_SPC_FACTOR, 0);
-            DrawNumberSequence(flapCnt.ToString(), numsSmlImg, flapsPos, NUM_SPC_FACTOR, 0);
-
-            // draw the average score, and average flaps with small numbers
-            DrawNumberSequence(avgScor.ToString(), numsSmlImg, avgScorsPos, NUM_SPC_FACTOR, 0);
-            DrawNumberSequence(avgFlaps.ToString(), numsSmlImg, avgFlapsPos, NUM_SPC_FACTOR, 0);
-
-            // iterate until the end of the score list or until the top 5 scores (TOP_SCORS)
-            for (int i = 0; i < scorsList.Count && i < TOP_SCORS; i++)
-            {
-                // draw the ith score
-                DrawNumberSequence(scorsList[i].ToString(), numsSmlImg, new Vector2(topScorsPos.X, topScorsPos.Y + i * TOP_SCORS_Y_SPC), NUM_SPC_FACTOR, 0);
-            }
-        }
-
-        // method reset the score variables
-        private void ResetScore()
-        {
-            // reset the position of the score
-            curScorPos.X = SCREEN_WIDTH / 2; // able to use 20 since (x/10/2) is (x/20)
-
-            // reset the current and result scores
-            curScor = SCOR_RST;
-            rsltScor = SCOR_RST;
-
-            // reset best score flag to false
-            isNewBest = false;
-        }
-
         // method to update score, (increment used for debug)
         private void UpdateScore(int increment = 1)
         {
             // add increment to the current score value
             curScor += increment;
-        }
-
-        // method to draw numbers with the num texture when given a number in the form a string
-        private void DrawNumberSequence(string num, Texture2D texture, Vector2 pos, int spacingFactor, float rightOffset = 0)
-        {
-            // store the width of a digit
-            int digitWidth = texture.Width / 10; // 10 digits in sprite
-
-            // space between each digit, as a factor of the digit width
-            int numSpacer = digitWidth / spacingFactor;
-
-            // change the position of the number by the numbers length, and offset
-            pos.X -= num.Length * (texture.Width / 10 + numSpacer) - numSpacer;
-            pos.X += digitWidth * rightOffset;
-
-            // iterate through the number 
-            for (int i = 0; i < num.Length; i++)
-            {
-                // store the digits value, by changing char to int
-                int digit = num[i] - '0';
-
-                // store the digit's draw position and score rectangle based of which number place it is
-                Vector2 drawLoc = new Vector2(pos.X + i * (digitWidth + numSpacer), pos.Y);
-                Rectangle sourceRec = new Rectangle(digit * digitWidth, 0, digitWidth, texture.Height);
-
-                // draw the digit
-                spriteBatch.Draw(texture, drawLoc, sourceRec, Color.White);
-            }
         }
 
         // method to update game over title
@@ -1531,6 +1182,414 @@ namespace WangC_PASS1
             }
         }
 
+        // method to update the sparkles
+        private void UpdateSparkle(GameTime gameTime)
+        {
+            // check if animation is currently not animating
+            if (!sparkAnim.IsAnimating())
+            {
+                // reset the position of the animation
+                sparkPos.Y = rand.Next((int)coinPos.Y, (int)(coinPos.Y + coinSize.Y));
+                sparkPos.X = rand.Next((int)coinPos.X, (int)(coinPos.X + coinSize.X));
+
+                // check if the distance between the coin's origin 
+                while (PointDistance(sparkPos, coinOrigin) > coinRadius)
+                {
+                    // re generate a coin position
+                    sparkPos.Y = rand.Next((int)coinPos.Y, (int)(coinPos.Y + coinSize.Y));
+                    sparkPos.X = rand.Next((int)coinPos.X, (int)(coinPos.X + coinSize.X));
+                }
+
+                // translate the animation's center to spark pos
+                sparkAnim.TranslateTo(sparkPos.X - sparkAnim.GetDestRec().Width / 2, sparkPos.Y - sparkAnim.GetDestRec().Height / 2);
+
+                // active the spark animation and reset it
+                sparkAnim.Activate(true);
+            }
+            // if animating (not not animating), update the animation 
+            else
+            {
+                sparkAnim.Update(gameTime);
+            }
+        }
+
+        // method to reset any menu elements
+        private void RstMenu()
+        {
+            // reset the bird position to title position
+            birdPos = birdTitlePosRst;
+
+            // re activate the bird animation, and restart it as well
+            birdAnim.Activate(true);
+        }
+
+        // method to reset the any pre game elements
+        private void RstPreGamePlay()
+        {
+            // set bird to pre game position
+            birdPos.X = birdPrePosRst.X;
+            birdPos.Y = birdPrePosRst.Y;
+            birdAnim.TranslateTo(birdPos.X, birdPos.Y);
+
+            // reset bird speed and angle
+            birdSpd = FLAP;
+            birdAnim.SetAngleDeg(0);
+
+            // reset current score variables
+            ResetScore();
+        }
+
+        // method to reset any game over elements
+        private void ResetGameOvr()
+        {
+            // reset the count delay timer. However only activate it if the current score is non-zero
+            if (curScor != 0)
+            {
+                cntDelay.ResetTimer(true);
+            }
+            else
+            {
+                cntDelay.ResetTimer(false);
+            }
+
+            // reset the game over fade title timer
+            gameOvrFade.ResetTimer(true);
+
+            // reset the result box position
+            rsltBoxPos = rsltBoxPosRst;
+
+            // reset the menu button timer and position
+            menuUpTime.ResetTimer(false);
+            btnRecs[MENU_BTN].Y = MENU_BTN_Y_RST;
+        }
+
+        // reset all fade variables
+        private void ResetFade(int fadeTime, bool isActive)
+        {
+            // reset the fade opacity and fade timer
+            fadeOpacity = EMPTY_OPACITY;
+            fadeCurTime.SetTargetTime(fadeTime);
+            fadeCurTime.ResetTimer(isActive);
+
+            // reset the fade half flag
+            fadedHalf = false;
+        }
+
+        // method to reset the pipes
+        private void ResetPipes()
+        {
+            // iterate through the pipes
+            for (int i = 0; i < PIPE_COUNT; i++)
+            {
+                // reset if pipe has passed bird
+                pipesPass[i] = false;
+
+                // locations of the ith pipe image
+                // check if i < 0, other wise i is 0
+                if (i > 0)
+                {
+                    // vertical displacement
+                    int verDis = rand.Next(PIPE_GEN_MIN, PIPE_GEN_MAX);
+
+                    // the top of the pipe will be +/- 400 of the previous pipe
+                    // but also needs to be between 0, and - pipe height + 88
+                    pipePos[i, TOP].Y = MathHelper.Clamp(pipePos[i - 1, TOP].Y + verDis, -1 * pipeRecs[i - 1, TOP].Height + PIPE_MIN_Y_FACTR, PIPE_MAX_Y);
+                    pipePos[i, BOT].Y = pipePos[i, TOP].Y + pipeRecs[i, TOP].Height + PIPE_Y_SPC; // 
+
+                    // set x values of the pipes to the right of the previous pipe
+                    pipePos[i, TOP].X = pipePos[i - 1, TOP].X + pipeRecs[i - 1, TOP].Width + PIPE_X_SPC;
+                    pipePos[i, BOT].X = pipePos[i - 1, BOT].X + pipeRecs[i - 1, BOT].Width + PIPE_X_SPC;
+                }
+                else // else i is at the 0 index 
+                {
+                    // the right most will be the always be between 0 and - the negative height of pipe plus '88'
+                    pipePos[i, TOP].Y = rand.Next(-1 * pipeRecs[0, TOP].Height + PIPE_MIN_Y_FACTR, PIPE_MAX_Y);
+                    pipePos[i, BOT].Y = pipePos[i, TOP].Y + pipeRecs[i, TOP].Height + PIPE_Y_SPC;
+
+                    // set the x value to the reset position
+                    pipePos[i, TOP].X = PIPE_RST_X;
+                    pipePos[i, BOT].X = PIPE_RST_X;
+                }
+
+                // change all the rectangle position to their respective position values
+                pipeRecs[i, TOP].X = (int)pipePos[i, TOP].X;
+                pipeRecs[i, BOT].X = (int)pipePos[i, BOT].X;
+                pipeRecs[i, TOP].Y = (int)pipePos[i, TOP].Y;
+                pipeRecs[i, BOT].Y = (int)pipePos[i, BOT].Y;
+            }
+        }
+
+
+        // method reset the score variables
+        private void ResetScore()
+        {
+            // reset the position of the score
+            curScorPos.X = SCREEN_WIDTH / 2; // able to use 20 since (x/10/2) is (x/20)
+
+            // reset the current and result scores
+            curScor = SCOR_RST;
+            rsltScor = SCOR_RST;
+
+            // reset best score flag to false
+            isNewBest = false;
+        }
+
+        /// <summary>
+        /// This is called when the game should draw itself.
+        /// </summary>
+        /// <param name="gameTime">Provides a snapshot of timing values.</param>
+        protected override void Draw(GameTime gameTime)
+        {
+            spriteBatch.Begin();
+
+            // draw the background 
+            spriteBatch.Draw(bgImg, bgPos, Color.White);
+
+            // draw the current game state
+            switch (gameState)
+            {
+                case STATS_STATE:
+                    //draw stats screen
+                    DrawStats();
+                    break;
+
+                case MENU_STATE:
+                    // draw title screen
+                    DrawMenuScreen();
+                    break;
+
+                case PRE_GAME_PLAY_STATE:
+                    // draw pre game play state
+                    DrawPreGamePlay();
+                    break;
+
+                case GAME_PLAY_STATE:
+                    // draw game play state
+                    DrawGamePlay();
+                    break;
+
+                case PRE_GAME_OVER_STATE:
+                    // draw the pre game over screen
+                    DrawPreGameOvr();
+                    break;
+
+                case GAME_OVER_STATE:
+                    // draw the game over screen
+                    DrawGameOvr();
+                    break;
+            }
+
+
+            spriteBatch.End();
+            base.Draw(gameTime);
+        }
+
+        // method draw the stats screen
+        private void DrawStats()
+        {
+            // draw the ground
+            DrawGround();
+
+            // draw the menu button
+            spriteBatch.Draw(btnImgs[MENU_BTN], btnRecs[MENU_BTN], Color.White);
+
+            // draw the stats box
+            DrawStatsBox();
+
+            // draw fade
+            DrawFadeScr(Color.Black);
+        }
+
+        // method to draw the title screen
+        private void DrawMenuScreen()
+        {
+            // draw the ground
+            DrawGround();
+
+            // draw the title
+            spriteBatch.Draw(titleImg, titlePos, Color.White);
+
+            // draw animated bird
+            birdAnim.Draw(spriteBatch, Color.White);
+
+            // draw the starting and stats button in the title screen
+            spriteBatch.Draw(btnImgs[START_BTN], btnRecs[START_BTN], Color.White);
+            spriteBatch.Draw(btnImgs[STATS_BTN], btnRecs[STATS_BTN], Color.White);
+
+            // only draw the fade is the timer is active
+            if (fadeCurTime.IsActive())
+            {
+                DrawFadeScr(Color.Black);
+            }
+        }
+
+        // method to draw the pre game play screen
+        private void DrawPreGamePlay()
+        {
+            // draw the bird
+            birdAnim.Draw(spriteBatch, Color.White);
+
+            // draw the ground
+            DrawGround();
+
+            // draw click instructions
+            spriteBatch.Draw(intrucImg, intrcuPos, Color.White);
+
+            // draw get ready title
+            spriteBatch.Draw(readyTitleImg, readyTitlePos, Color.White);
+
+            // check if the timer is still running, if so draw the fade
+            if (fadeCurTime.IsActive())
+            {
+                DrawFadeScr(Color.Black);
+            }
+            // otherwise reset the fade variables
+
+            // draw the current score, such that the unit digits is centered
+            DrawNumberSequence(curScor.ToString(), numsLrgImg, curScorPos, NUM_SPC_FACTOR, 0.5f);
+        }
+
+        // method to draw the game play
+        private void DrawGamePlay()
+        {
+            // draw the pipes 
+            DrawPipes();
+
+            // draw the pipes
+            DrawGround();
+
+            // draw the bird with rotation
+            birdAnim.DrawRotated(spriteBatch, Color.White);
+
+            // draw the current score
+            DrawNumberSequence(curScor.ToString(), numsLrgImg, curScorPos, NUM_SPC_FACTOR, 0.5f);
+        }
+
+        // method to draw the pre game over screen
+        private void DrawPreGameOvr()
+        {
+            // draw the pipes
+            DrawPipes();
+
+            // draw the ground
+            DrawGround();
+
+            // draw the bird rotated
+            birdAnim.DrawRotated(spriteBatch, Color.White);
+
+            // draw the death fade (flash)
+            DrawFadeScr(Color.White);
+        }
+
+        // method to draw the game over screen
+        private void DrawGameOvr()
+        {
+            // draw the pipes
+            DrawPipes();
+
+            // draw the ground
+            DrawGround();
+
+            // draw bird rotated
+            birdAnim.DrawRotated(spriteBatch, Color.White);
+
+            // draw the game over title
+            DrawGameOvrTitle();
+
+            // draw the result box and it's elements
+            DrawRsltBox();
+
+            // result box is in place draw the menu
+            if (rsltBoxPos == rsltBoxPosFin)
+            {
+                spriteBatch.Draw(btnImgs[MENU_BTN], btnRecs[MENU_BTN], Color.White);
+            }
+
+            // check if the timer is still running, if so draw the fade
+            if (fadeCurTime.IsActive())
+            {
+                DrawFadeScr(Color.Black);
+            }
+        }
+
+
+        // draw the fade screen
+        // if isIn is true, then it's fading in, otherwise it's fading out
+        private void DrawFadeScr(Color color)
+        {
+            spriteBatch.Draw(fadeImg, scrnRec, color * fadeOpacity);
+        }
+
+        // method to draw the ground
+        private void DrawGround()
+        {
+            // draw the ground
+            spriteBatch.Draw(grdImg, grdRecs[0], Color.White);
+            spriteBatch.Draw(grdImg, grdRecs[1], Color.White);
+        }
+
+        // method to draw the pipes
+        private void DrawPipes()
+        {
+            // iterate through the pipes
+            for (int i = 0; i < PIPE_COUNT; i++)
+            {
+                // draw the bottom and top image of the ith pipe
+                spriteBatch.Draw(pipeImgs[TOP], pipeRecs[i, TOP], Color.White);
+                spriteBatch.Draw(pipeImgs[BOT], pipeRecs[i, BOT], Color.White);
+            }
+        }
+
+        // method to draw stats rectangle box
+        private void DrawStatsBox()
+        {
+            // draw the stats image
+            spriteBatch.Draw(statsBoxImg, statsBoxPos, Color.White);
+
+            // draw the total play count and total flap count with small numbers
+            DrawNumberSequence(playsCnt.ToString(), numsSmlImg, playsPos, NUM_SPC_FACTOR, 0);
+            DrawNumberSequence(flapCnt.ToString(), numsSmlImg, flapsPos, NUM_SPC_FACTOR, 0);
+
+            // draw the average score, and average flaps with small numbers
+            DrawNumberSequence(avgScor.ToString(), numsSmlImg, avgScorsPos, NUM_SPC_FACTOR, 0);
+            DrawNumberSequence(avgFlaps.ToString(), numsSmlImg, avgFlapsPos, NUM_SPC_FACTOR, 0);
+
+            // iterate until the end of the score list or until the top 5 scores (TOP_SCORS)
+            for (int i = 0; i < scorsList.Count && i < TOP_SCORS; i++)
+            {
+                // draw the ith score
+                DrawNumberSequence(scorsList[i].ToString(), numsSmlImg, new Vector2(topScorsPos.X, topScorsPos.Y + i * TOP_SCORS_Y_SPC), NUM_SPC_FACTOR, 0);
+            }
+        }
+
+        // method to draw numbers with the num texture when given a number in the form a string
+        private void DrawNumberSequence(string num, Texture2D texture, Vector2 pos, int spacingFactor, float rightOffset = 0)
+        {
+            // store the width of a digit
+            int digitWidth = texture.Width / 10; // 10 digits in sprite
+
+            // space between each digit, as a factor of the digit width
+            int numSpacer = digitWidth / spacingFactor;
+
+            // change the position of the number by the numbers length, and offset
+            pos.X -= num.Length * (texture.Width / 10 + numSpacer) - numSpacer;
+            pos.X += digitWidth * rightOffset;
+
+            // iterate through the number 
+            for (int i = 0; i < num.Length; i++)
+            {
+                // store the digits value, by changing char to int
+                int digit = num[i] - '0';
+
+                // store the digit's draw position and score rectangle based of which number place it is
+                Vector2 drawLoc = new Vector2(pos.X + i * (digitWidth + numSpacer), pos.Y);
+                Rectangle sourceRec = new Rectangle(digit * digitWidth, 0, digitWidth, texture.Height);
+
+                // draw the digit
+                spriteBatch.Draw(texture, drawLoc, sourceRec, Color.White);
+            }
+        }
+
         // method to draw the game title
         private void DrawGameOvrTitle()
         {
@@ -1580,37 +1639,6 @@ namespace WangC_PASS1
                 {
                     DrawNewPb();
                 }
-            }
-        }
-
-        // method to update the sparkles
-        private void UpdateSparkle(GameTime gameTime)
-        {
-            // check if animation is currently not animating
-            if (!sparkAnim.IsAnimating())
-            {
-                // reset the position of the animation
-                sparkPos.Y = rand.Next((int)coinPos.Y, (int)(coinPos.Y + coinSize.Y));
-                sparkPos.X = rand.Next((int)coinPos.X, (int)(coinPos.X + coinSize.X));
-
-                // check if the distance between the coin's origin 
-                while (PointDistance(sparkPos, coinOrigin) > coinRadius)
-                {
-                    // re generate a coin position
-                    sparkPos.Y = rand.Next((int)coinPos.Y, (int)(coinPos.Y + coinSize.Y));
-                    sparkPos.X = rand.Next((int)coinPos.X, (int)(coinPos.X + coinSize.X));
-                }
-
-                // translate the animation's center to spark pos
-                sparkAnim.TranslateTo(sparkPos.X - sparkAnim.GetDestRec().Width / 2, sparkPos.Y - sparkAnim.GetDestRec().Height / 2);
-
-                // active the spark animation and reset it
-                sparkAnim.Activate(true);
-            }
-            // if animating (not not animating), update the animation 
-            else
-            {
-                sparkAnim.Update(gameTime);
             }
         }
 
@@ -1702,14 +1730,13 @@ namespace WangC_PASS1
                 // open the stats file
                 inFile = File.OpenText(filePath);
 
-                //create a temp score and first data variable to store the stat data from the file
-                int tempScor;
+                // if value is an int and greater or equal to 0, add the value to scores list
                 string[] firstData; // use string as can't read array directly to int
 
                 // read the first line and split it into an array
                 firstData = inFile.ReadLine().Split(',');
 
-                // try to covert the values of the first data array into ints and store them into their varibles
+                // try to covert the values of the first data array into ints and store them into their variables
                 // if can't convert to int, set the values to 0
                 if (!int.TryParse(firstData[0], out playsCnt) || playsCnt < 0)
                 {
@@ -1724,10 +1751,14 @@ namespace WangC_PASS1
                 // read  until the end of the file
                 while (!inFile.EndOfStream)
                 {
-                    // if value is an int and greater or equal to 0, add the value to scores list
-                    if (int.TryParse(inFile.ReadLine(), out tempScor) && tempScor >= 0)
+                    // create a temp, if value is an int and greater or equal to 0, add the value to scores list
+                    if (int.TryParse(inFile.ReadLine(), out int tempScor) && tempScor >= 0)
                     {
                         scorsList.Add(tempScor);
+
+                        // update best score
+                        // set best score to the max of the temp score or the max score
+                        bestScor = Math.Max(bestScor, tempScor);
                     }
                 }
 
@@ -1745,7 +1776,7 @@ namespace WangC_PASS1
             }
         }
 
-        // create a txt file with the file path
+        // method that create a txt file with the file path
         private void CreateFile(string filePath)
         {
             // create a empty txt file
